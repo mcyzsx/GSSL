@@ -47,7 +47,8 @@ jobs:
                     fi
                     
                     # 汇总状态信息
-                    STATUS="$STATUS$DOMAIN_STATUS\n"
+                    STATUS+="$DOMAIN_STATUS"
+                    STATUS+=$'\n'
                   done
 
                   # 输出结果
@@ -56,7 +57,7 @@ jobs:
 
             - name: Overwrite README.md with status
               run: |
-                  echo "${{ steps.ssl.outputs.status }}" > README.md
+                  printf "${{ steps.ssl.outputs.status }}" > README.md
 
             - name: Commit and push if changed
               run: |
