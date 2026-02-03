@@ -53,11 +53,9 @@ jobs:
 
                   # 输出结果
                   echo "exit_needed=$EXIT_NEEDED" >> $GITHUB_OUTPUT
-                  echo "status=$STATUS" >> $GITHUB_OUTPUT
 
-            - name: Overwrite README.md with status
-              run: |
-                  printf "${{ steps.ssl.outputs.status }}" > README.md
+                  # 将状态信息直接写入 README.md，避免通过 GITHUB_OUTPUT 传递特殊字符
+                  printf "$STATUS" > README.md
 
             - name: Commit and push if changed
               run: |
@@ -76,5 +74,5 @@ jobs:
               if: ${{ steps.ssl.outputs.exit_needed == 'true' }}
               run: |
                   echo "❌ 部分SSL证书即将过期，触发失败"
-                  echo "${{ steps.ssl.outputs.status }}"
+                  cat README.md
                   exit 1
