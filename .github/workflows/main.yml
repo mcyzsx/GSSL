@@ -1,57 +1,79 @@
 name: SSL Certificate Expiry
 
 on:
-  schedule:
-    - cron: "0 16 * * *"
-  workflow_dispatch: # 允许手动触发
+    schedule:
+        - cron: "0 16 * * *"
+    workflow_dispatch: # 允许手动触发
 
 jobs:
-  check-ssl-cert:
-    runs-on: ubuntu-latest
+    check-ssl-cert:
+        runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+        steps:
+            - name: Checkout repo
+              uses: actions/checkout@v4
 
-      - name: Check SSL expiry
-        id: ssl
-        run: |
-          DOMAIN="meekdai.com"
-          EXPIRY_DATE=$(echo | openssl s_client -servername $DOMAIN -connect $DOMAIN:443 2>/dev/null \
-            | openssl x509 -noout -enddate | cut -d= -f2)
-          EXPIRY_TS=$(date -d "$EXPIRY_DATE" +%s)
-          NOW_TS=$(date +%s)
-          REMAINING_DAYS=$(( (EXPIRY_TS - NOW_TS) / 86400 ))
+            - name: Check SSL expiry for multiple domains
+              id: ssl
+              run: |
+                  # 定义要检查的域名和对应备注（格式：域名:备注）
+                  DOMAIN_NOTES=("blog.zsx815.top:OneBlog" "chat.zsx815.top:匿名聊天室" "umami-api.051531.xyz:API服务" "m.314926.xyz:Memos" "ech0.050815.xyz:Echo" "pyq.mcyzsx.top:朋友圈")
 
-          if [ "$REMAINING_DAYS" -lt 7 ]; then
-            STATUS="⚠️ meekdai.com 证书将在 $REMAINING_DAYS 天内过期！"
-            echo "exit_needed=true" >> $GITHUB_OUTPUT
-          else
-            STATUS="✅ meekdai.com 证书正常，剩余 $REMAINING_DAYS 天"
-            echo "exit_needed=false" >> $GITHUB_OUTPUT
-          fi
+                  # 初始化变量
+                  STATUS=""
+                  EXIT_NEEDED="false"
 
-          echo "status=$STATUS" >> $GITHUB_OUTPUT
+                  # 遍历每个域名和备注
+                  for DOMAIN_NOTE in "${DOMAIN_NOTES[@]}"; do
+                    # 分离域名和备注
+                    DOMAIN=$(echo "$DOMAIN_NOTE" | cut -d: -f1)
+                    NOTE=$(echo "$DOMAIN_NOTE" | cut -d: -f2)
+                    
+                    # 检查SSL证书过期时间
+                    EXPIRY_DATE=$(echo | openssl s_client -servername $DOMAIN -connect $DOMAIN:443 2>/dev/null \
+                      | openssl x509 -noout -enddate | cut -d= -f2)
+                    
+                    # 计算剩余天数
+                    EXPIRY_TS=$(date -d "$EXPIRY_DATE" +%s)
+                    NOW_TS=$(date +%s)
+                    REMAINING_DAYS=$(( (EXPIRY_TS - NOW_TS) / 86400 ))
+                    
+                    # 生成状态信息
+                    if [ "$REMAINING_DAYS" -lt 7 ]; then
+                      DOMAIN_STATUS="⚠️ $DOMAIN ($NOTE) 证书将在 $REMAINING_DAYS 天内过期！"
+                      EXIT_NEEDED="true"
+                    else
+                      DOMAIN_STATUS="✅ $DOMAIN ($NOTE) 证书正常，剩余 $REMAINING_DAYS 天"
+                    fi
+                    
+                    # 汇总状态信息
+                    STATUS="$STATUS$DOMAIN_STATUS\n"
+                  done
 
-      - name: Overwrite README.md with status
-        run: |
-          echo "${{ steps.ssl.outputs.status }}" > README.md
+                  # 输出结果
+                  echo "exit_needed=$EXIT_NEEDED" >> $GITHUB_OUTPUT
+                  echo "status=$STATUS" >> $GITHUB_OUTPUT
 
-      - name: Commit and push if changed
-        run: |
-          git config user.name github-actions
-          git config user.email github-actions@github.com
+            - name: Overwrite README.md with status
+              run: |
+                  echo "${{ steps.ssl.outputs.status }}" > README.md
 
-          if [[ `git status --porcelain` ]]; then
-            git add README.md
-            git commit -m "更新 SSL 证书状态"
-            git push
-          else
-            echo "README 无变化，无需提交"
-          fi
+            - name: Commit and push if changed
+              run: |
+                  git config user.name github-actions
+                  git config user.email github-actions@github.com
 
-      - name: Fail if cert expires soon
-        if: ${{ steps.ssl.outputs.exit_needed == 'true' }}
-        run: |
-          echo "❌ meekdai.com SSL 证书将在 ${{ steps.ssl.outputs.status }} 过期，触发失败"
-          exit 1
+                  if [[ `git status --porcelain` ]]; then
+                    git add README.md
+                    git commit -m "更新 SSL 证书状态"
+                    git push
+                  else
+                    echo "README 无变化，无需提交"
+                  fi
+
+            - name: Fail if any cert expires soon
+              if: ${{ steps.ssl.outputs.exit_needed == 'true' }}
+              run: |
+                  echo "❌ 部分SSL证书即将过期，触发失败"
+                  echo "${{ steps.ssl.outputs.status }}"
+                  exit 1
