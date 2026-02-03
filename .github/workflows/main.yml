@@ -48,7 +48,7 @@ jobs:
                     
                     # 汇总状态信息
                     STATUS+="$DOMAIN_STATUS"
-                    STATUS+=$'\n'
+                    STATUS+=$'\n\n'
                   done
 
                   # 输出结果
