@@ -17,7 +17,7 @@ jobs:
               id: ssl
               run: |
                   # 定义要检查的域名和对应备注（格式：域名:备注）
-                  DOMAIN_NOTES=("blog.zsx815.top:OneBlog" "chat.zsx815.top:匿名聊天室" "umami-api.051531.xyz:API服务" "m.314926.xyz:Memos" "pyq.mcyzsx.top:朋友圈")
+                  DOMAIN_NOTES=("blog.zsx815.top:OneBlog" "chat.zsx815.top:匿名聊天室" "umami-api.051531.xyz:API服务" "m.314926.xyz:Memos" "pyq.mcyzsx.top:朋友圈" "fx.314926.xyz:tg盘" "blog.314926.xyz:Clarity")
 
                   # 初始化变量
                   STATUS=""
