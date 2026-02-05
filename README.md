@@ -1,7 +1,5 @@
 ✅ blog.zsx815.top (OneBlog) 证书正常，剩余 59 天
 
-✅ chat.zsx815.top (匿名聊天室) 证书正常，剩余 45 天
-
 ✅ umami-api.051531.xyz (API服务) 证书正常，剩余 35 天
 
 ✅ m.314926.xyz (Memos) 证书正常，剩余 88 天
